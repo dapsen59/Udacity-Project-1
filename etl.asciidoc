@@ -1,0 +1,535 @@
+
+[[etl-processes]]
+= ETL Processes
+
+Use this notebook to develop the ETL process for each of your tables
+before completing the `etl.py` file to load the whole datasets.
+
+
++*In[1]:*+
+[source, ipython3]
+----
+import os
+import glob
+import psycopg2
+import pandas as pd
+from sql_queries import *
+----
+
+
++*In[2]:*+
+[source, ipython3]
+----
+conn = psycopg2.connect("host=127.0.0.1 dbname=sparkifydb user=student password=student")
+cur = conn.cursor()
+----
+
+
++*In[3]:*+
+[source, ipython3]
+----
+def get_files(filepath):
+    all_files = []
+    for root, dirs, files in os.walk(filepath):
+        files = glob.glob(os.path.join(root,'*.json'))
+        for f in files :
+            all_files.append(os.path.abspath(f))
+    
+    return all_files
+----
+
+[[process-song_data]]
+= Process `song_data`
+
+In this first part, you'll perform ETL on the first dataset,
+`song_data`, to create the `songs` and `artists` dimensional tables.
+
+Let's perform ETL on a single song file and load a single record into
+each table to start. - Use the `get_files` function provided above to
+get a list of all song JSON files in `data/song_data` - Select the first
+song in this list - Read the song file and view the data
+
+
++*In[4]:*+
+[source, ipython3]
+----
+song_path = 'data/song_data'
+#song_files = get_files ('data/song_data')
+
+#this call will return list of files under that path
+song_files = get_files(song_path) 
+----
+
+
++*In[5]:*+
+[source, ipython3]
+----
+#pick the first log file
+filepath = song_files[0]
+print (filepath)
+----
+
+
++*Out[5]:*+
+----
+/home/workspace/data/song_data/A/B/C/TRABCRU128F423F449.json
+----
+
+
++*In[6]:*+
+[source, ipython3]
+----
+#pd.read_json reads the json file in a single file
+df = pd.read_json(filepath, lines=True)
+df.head()
+
+#df = pd.read_json(filepath)
+
+----
+
+
++*Out[6]:*+
+----
+[cols=",,,,,,,,,,",options="header",]
+|=======================================================================
+| |artist_id |artist_latitude |artist_location |artist_longitude
+|artist_name |duration |num_songs |song_id |title |year
+|0 |AR8IEZO1187B99055E |NaN | |NaN |Marc Shaiman |149.86404 |1
+|SOINLJW12A8C13314C |City Slickers |2008
+|=======================================================================
+----
+
+[[songs-table]]
+== #1: `songs` Table
+
+[[extract-data-for-songs-table]]
+==== Extract Data for Songs Table
+
+* Select columns for song ID, title, artist ID, year, and duration
+* Use `df.values` to select just the values from the dataframe
+* Index to select the first (only) record in the dataframe
+* Convert the array to a list and set it to `song_data`
+
+
++*In[7]:*+
+[source, ipython3]
+----
+#song_files = 
+#song_data = list(df[['song_id', 'title', 'artist_id', 'year', 'duration']].value[0])
+
+#Select columns for song ID, title, artist ID, year, and duration
+song_data =  df[['song_id', 'title', 'artist_id', 'year', 'duration' ]]
+#print song_data
+#song_data
+song_data = song_data.values.tolist()
+#ndex to select the first (only) record in the datafram
+song_data= song_data[0]
+print(song_data)
+
+# 
+#
+
+----
+
+
++*Out[7]:*+
+----
+['SOINLJW12A8C13314C', 'City Slickers', 'AR8IEZO1187B99055E', 2008, 149.86404]
+----
+
+[[insert-record-into-song-table]]
+==== Insert Record into Song Table
+
+Implement the `song_table_insert` query in `sql_queries.py` and run the
+cell below to insert a record for this song into the `songs` table.
+Remember to run `create_tables.py` before running the cell below to
+ensure you've created/resetted the `songs` table in the sparkify
+database.
+
+
++*In[14]:*+
+[source, ipython3]
+----
+cur.execute(song_table_insert, song_data)
+#conn.commit()
+
+song_table_insert = ("""INSERT INTO songs (song_id, title, artist_id, year, duration) VALUES(%s, %s, %s, %s, %s);""")
+----
+
+
++*Out[14]:*+
+----
+
+    ---------------------------------------------------------------------------
+
+    ValueError                                Traceback (most recent call last)
+
+    <ipython-input-14-d89a0995b250> in <module>()
+    ----> 1 cur.execute(song_table_insert, song_data)
+          2 #conn.commit()
+          3 
+          4 song_table_insert = ("""INSERT INTO songs (song_id, title, artist_id, year, duration) VALUES(%s, %s, %s, %s, %s);""")
+
+
+    ValueError: unsupported format character ',' (0x2c) at index 71
+
+----
+
+Run `test.ipynb` to see if you've successfully added a record to this
+table.
+
+[[artists-table]]
+== #2: `artists` Table
+
+[[extract-data-for-artists-table]]
+==== Extract Data for Artists Table
+
+* Select columns for artist ID, name, location, latitude, and longitude
+* Use `df.values` to select just the values from the dataframe
+* Index to select the first (only) record in the dataframe
+* Convert the array to a list and set it to `artist_data`
+
+
++*In[12]:*+
+[source, ipython3]
+----
+#df
+#artist_data = df.reindex(['artist_id', 'name', 'location', 'latitude', 'longitude'])
+#artist_data = df([['artist_id', 'name', 'location', 'latitude', 'longitude']])
+
+artist_data= artist_data.values.tolist()
+artist_data = artist_data[0]
+print(artist_data)
+----
+
+
++*Out[12]:*+
+----
+
+    ---------------------------------------------------------------------------
+
+    NameError                                 Traceback (most recent call last)
+
+    <ipython-input-12-5b08835b68fc> in <module>()
+          3 #artist_data = df([['artist_id', 'name', 'location', 'latitude', 'longitude']])
+          4 
+    ----> 5 artist_data= artist_data.values.tolist()
+          6 artist_data = artist_data[0]
+          7 print(artist_data)
+
+
+    NameError: name 'artist_data' is not defined
+
+----
+
+[[insert-record-into-artist-table]]
+==== Insert Record into Artist Table
+
+Implement the `artist_table_insert` query in `sql_queries.py` and run
+the cell below to insert a record for this song's artist into the
+`artists` table. Remember to run `create_tables.py` before running the
+cell below to ensure you've created/resetted the `artists` table in the
+sparkify database.
+
+
++*In[13]:*+
+[source, ipython3]
+----
+cur.execute(artist_table_insert, artist_data)
+conn.commit()
+artist_table_insert= ("""INSERT INTO artists (artist, name, location, latitude, longitude ) VALUES(%s, %s, %s, %s, %s) ;""" )
+----
+
+
++*Out[13]:*+
+----
+
+    ---------------------------------------------------------------------------
+
+    NameError                                 Traceback (most recent call last)
+
+    <ipython-input-13-58a36b87984f> in <module>()
+    ----> 1 cur.execute(artist_table_insert, artist_data)
+          2 conn.commit()
+          3 artist_table_insert= ("""INSERT INTO artists (artist, name, location, latitude, longitude ) VALUES(%s, %s, %s, %s, %s) ;""" )
+
+
+    NameError: name 'artist_data' is not defined
+
+----
+
+Run `test.ipynb` to see if you've successfully added a record to this
+table.
+
+[[process-log_data]]
+= Process `log_data`
+
+In this part, you'll perform ETL on the second dataset, `log_data`, to
+create the `time` and `users` dimensional tables, as well as the
+`songplays` fact table.
+
+Let's perform ETL on a single log file and load a single record into
+each table. - Use the `get_files` function provided above to get a list
+of all log JSON files in `data/log_data` - Select the first log file in
+this list - Read the log file and view the data
+
+
++*In[31]:*+
+[source, ipython3]
+----
+log_files = get_files = ("data/log_data")
+----
+
+
++*In[32]:*+
+[source, ipython3]
+----
+filepath = log_files[0]
+----
+
+
++*In[33]:*+
+[source, ipython3]
+----
+df = pd.read_json(filepath, lines =True);
+df.head() 
+----
+
+
++*Out[33]:*+
+----
+
+    ---------------------------------------------------------------------------
+
+    ValueError                                Traceback (most recent call last)
+
+    <ipython-input-33-3971156e5f7a> in <module>()
+    ----> 1 df = pd.read_json(filepath, lines =True);
+          2 df.head()
+
+
+    /opt/conda/lib/python3.6/site-packages/pandas/io/json/json.py in read_json(path_or_buf, orient, typ, dtype, convert_axes, convert_dates, keep_default_dates, numpy, precise_float, date_unit, encoding, lines, chunksize, compression)
+        420         return json_reader
+        421 
+    --> 422     result = json_reader.read()
+        423     if should_close:
+        424         try:
+
+
+    /opt/conda/lib/python3.6/site-packages/pandas/io/json/json.py in read(self)
+        524             data = to_str(self.data)
+        525             obj = self._get_object_parser(
+    --> 526                 self._combine_lines(data.split('\n'))
+        527             )
+        528         else:
+
+
+    /opt/conda/lib/python3.6/site-packages/pandas/io/json/json.py in _get_object_parser(self, json)
+        544         obj = None
+        545         if typ == 'frame':
+    --> 546             obj = FrameParser(json, **kwargs).parse()
+        547 
+        548         if typ == 'series' or obj is None:
+
+
+    /opt/conda/lib/python3.6/site-packages/pandas/io/json/json.py in parse(self)
+        636 
+        637         else:
+    --> 638             self._parse_no_numpy()
+        639 
+        640         if self.obj is None:
+
+
+    /opt/conda/lib/python3.6/site-packages/pandas/io/json/json.py in _parse_no_numpy(self)
+        851         if orient == "columns":
+        852             self.obj = DataFrame(
+    --> 853                 loads(json, precise_float=self.precise_float), dtype=None)
+        854         elif orient == "split":
+        855             decoded = {str(k): v for k, v in compat.iteritems(
+
+
+    ValueError: Expected object or value
+
+----
+
+[[time-table]]
+== #3: `time` Table
+
+[[extract-data-for-time-table]]
+==== Extract Data for Time Table
+
+* Filter records by `NextSong` action
+* Convert the `ts` timestamp column to datetime
+* Hint: the current timestamp is in milliseconds
+* Extract the timestamp, hour, day, week of year, month, year, and
+weekday from the `ts` column and set `time_data` to a list containing
+these values in order
+* Hint: use pandas'
+https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.dt.html[`dt`
+attribute] to access easily datetimelike properties.
+* Specify labels for these columns and set to `column_labels`
+* Create a dataframe, `time_df,` containing the time data for this file
+by combining `column_labels` and `time_data` into a dictionary and
+converting this into a dataframe
+
+
++*In[ ]:*+
+[source, ipython3]
+----
+df = 
+df.head()
+----
+
+
++*In[ ]:*+
+[source, ipython3]
+----
+t = 
+t.head()
+----
+
+
++*In[ ]:*+
+[source, ipython3]
+----
+time_data = ()
+column_labels = ()
+----
+
+
++*In[ ]:*+
+[source, ipython3]
+----
+time_df = 
+time_df.head()
+----
+
+[[insert-records-into-time-table]]
+==== Insert Records into Time Table
+
+Implement the `time_table_insert` query in `sql_queries.py` and run the
+cell below to insert records for the timestamps in this log file into
+the `time` table. Remember to run `create_tables.py` before running the
+cell below to ensure you've created/resetted the `time` table in the
+sparkify database.
+
+
++*In[ ]:*+
+[source, ipython3]
+----
+for i, row in time_df.iterrows():
+    cur.execute(time_table_insert, list(row))
+    conn.commit()
+----
+
+Run `test.ipynb` to see if you've successfully added records to this
+table.
+
+[[users-table]]
+== #4: `users` Table
+
+[[extract-data-for-users-table]]
+==== Extract Data for Users Table
+
+* Select columns for user ID, first name, last name, gender and level
+and set to `user_df`
+
+
++*In[ ]:*+
+[source, ipython3]
+----
+user_df = 
+----
+
+[[insert-records-into-users-table]]
+==== Insert Records into Users Table
+
+Implement the `user_table_insert` query in `sql_queries.py` and run the
+cell below to insert records for the users in this log file into the
+`users` table. Remember to run `create_tables.py` before running the
+cell below to ensure you've created/resetted the `users` table in the
+sparkify database.
+
+
++*In[ ]:*+
+[source, ipython3]
+----
+for i, row in user_df.iterrows():
+    cur.execute(user_table_insert, row)
+    conn.commit()
+----
+
+Run `test.ipynb` to see if you've successfully added records to this
+table.
+
+[[songplays-table]]
+== #5: `songplays` Table
+
+[[extract-data-and-songplays-table]]
+==== Extract Data and Songplays Table
+
+This one is a little more complicated since information from the songs
+table, artists table, and original log file are all needed for the
+`songplays` table. Since the log file does not specify an ID for either
+the song or the artist, you'll need to get the song ID and artist ID by
+querying the songs and artists tables to find matches based on song
+title, artist name, and song duration time. - Implement the
+`song_select` query in `sql_queries.py` to find the song ID and artist
+ID based on the title, artist name, and duration of a song. - Select the
+timestamp, user ID, level, song ID, artist ID, session ID, location, and
+user agent and set to `songplay_data`
+
+[[insert-records-into-songplays-table]]
+==== Insert Records into Songplays Table
+
+* Implement the `songplay_table_insert` query and run the cell below to
+insert records for the songplay actions in this log file into the
+`songplays` table. Remember to run `create_tables.py` before running the
+cell below to ensure you've created/resetted the `songplays` table in
+the sparkify database.
+
+
++*In[ ]:*+
+[source, ipython3]
+----
+for index, row in df.iterrows():
+
+    # get songid and artistid from song and artist tables
+    cur.execute(song_select, (row.song, row.artist, row.length))
+    results = cur.fetchone()
+    
+    if results:
+        songid, artistid = results
+    else:
+        songid, artistid = None, None
+
+    # insert songplay record
+    songplay_data = ()
+    cur.execute(songplay_table_insert, songplay_data)
+    conn.commit()
+----
+
+Run `test.ipynb` to see if you've successfully added records to this
+table.
+
+[[close-connection-to-sparkify-database]]
+= Close Connection to Sparkify Database
+
+
++*In[ ]:*+
+[source, ipython3]
+----
+conn.close()
+----
+
+[[implement-etl.py]]
+= Implement `etl.py`
+
+Use what you've completed in this notebook to implement `etl.py`.
+
+
++*In[ ]:*+
+[source, ipython3]
+----
+
+----
