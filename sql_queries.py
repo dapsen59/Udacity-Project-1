@@ -1,45 +1,78 @@
 # DROP TABLES
 
 songplay_table_drop = "DROP TABLE IF EXISTS songplays"
-user_table_drop = " DROP TABLE IF EXISTS users"
-song_table_drop = " DROP TABLE IF EXISTS songs"
+user_table_drop = "DROP TABLE IF EXISTS users"
+song_table_drop = "DROP TABLE IF EXISTS songs"
 artist_table_drop = "DROP TABLE IF EXISTS artists"
 time_table_drop = "DROP TABLE IF EXISTS time"
 
 # CREATE TABLES
 
-songplay_table_create = ("""CREATE TABLE songplays (songplay_id int, start_time int, user_id int, level char, song_id int, artist_id int, session_id int, location text, user_agent text, PRIMARY KEY (user_id, artist_id) )
+#songplay_table_create = """ CREATE TABLE songplays 
+#(songplay_id serial, start_time timestamp, user_id text, level char, song_id text, artist_id text, session_id text, location text, user_agent text, 
+#PRIMARY KEY ( user_id, artist_id))"""
+
+songplay_table_create = ("""
+CREATE TABLE songplays(
+    songplay_id SERIAL PRIMARY KEY,
+    start_time BIGINT,
+    user_id TEXT NOT NULL,
+    level TEXT,
+    song_id TEXT ,
+    artist_id TEXT,
+    session_id TEXT,
+    location TEXT,
+    user_agent TEXT
+);
 """)
 
-user_table_create = (""" CREATE TABLE   users (user_id int, first_name text, last_name text, gender char , level char PRIMARY KEY (user_id) )
-""")
+user_table_create = """ CREATE TABLE users 
+(user_id text, first_name text, last_name text, gender char, level text, PRIMARY KEY ( user_id) )"""
 
-song_table_create = ("""CREATE TABLE songs (song_id int , title text, artist_id int, year int, duration int, PRIMARY KEY (song_id, artist_id) )
-""")
+song_table_create = """ CREATE TABLE songs 
+(song_id text, title text, artist_id text, year int, duration numeric, PRIMARY KEY ( song_id, artist_id ) )"""
 
-artist_table_create = ("""CREATE TABLE artists (artist_id int, name text, location text, latitude char, longitude char PRIMARY KEY (artist_id) )
-""")
+artist_table_create = """ CREATE TABLE artists 
+(artist_id text, name text, location text, latitude numeric, longitude numeric, PRIMARY KEY ( artist_id ) )"""
 
-time_table_create = ("""CREATE TABLE time (start_time int, hour int , day char, week char, month char, weekday char PRIMARY KEY (start_time) )
-""")
+time_table_create = """ CREATE TABLE time 
+(start_time timestamp, hour int, day int, week int, month int, year int,  weekday int, PRIMARY KEY ( start_time ) )"""
 
 # INSERT RECORDS
 
-#songplay_table_insert = ("INSERT INTO songplay (songplay_id, start_time, user_id, level, song_id, artist_id,  session_id, location, user_agent) VALUES( %, %, %, %, %, %, %, %, %);""")
+songplay_table_insert = """INSERT INTO songplays
+(start_time, user_id, level, song_id, artist_id,  session_id, location, user_agent) VALUES( %s, %s, %s, %s, %s, %s, %s, %s);"""
 
-#user_table_insert = (""" INSERT INTO users ( user_id, first_name, last_name, gender, level) VALUES( %, %, %, %, %); """)
+user_table_insert = """INSERT INTO users
+( user_id, first_name, last_name, gender, level) VALUES( %s, %s, %s, %s, %s) ON CONFLICT(user_id) DO NOTHING; """
 
-#song_table_insert = ("""INSERT INTO songs (song_id, title, artist_id, year, duration)  VALUES( %, %, %, %, %); """)
+song_table_insert = """INSERT INTO songs 
+(song_id, title, artist_id, year, duration)  VALUES( %, %, %, %, %) ON CONFLICT(song_id, artist_id) DO NOTHING ; """
 
-#artist_table_insert = ("""INSERT INTO artists(artist_id, name, location, latitude, longitude)  VALUES( %, %, %, %, %);   """)
+artist_table_insert = """INSERT INTO artists
+(artist_id, name, location, latitude, longitude)  VALUES( %, %, %, %, %)ON CONFLICT(artist_id) DO NOTHING; """
 
 
-#time_table_insert = (""" INSERT INTO time (start_time, hour, day, week, month, weekday)  VALUES( %, %, %, %, %, %); """)
+time_table_insert = """INSERT INTO time 
+(start_time, hour, day, week, month, year, weekday)  VALUES( %s, %s, %s, %s, %s, %s, %s) ON CONFLICT(start_time) DO NOTHING; """
+
+#print(songplay)
 
 # FIND SONGS
 
-#song_select = (""" SELECT * FROM songs
+#song_select = (""" SELECT songs.song_id, artists.artist_id FROM songs, artists where songs.artist_id = artists.artist_id
+#""")
+
+
+song_select = ("""  Select songs.Song_id,  songs.duration, artists.name, songs.year
+                    From songs
+                    INNER JOIN artists ON songs.artist_id =artists.artist_id
+
 """)
+
+#ts, level, user_id, song_id, session_id, location, user_agent
+
+#, user ID, level, song ID, artist ID, session ID, location, and user agent 
 
 # QUERY LISTS
 
